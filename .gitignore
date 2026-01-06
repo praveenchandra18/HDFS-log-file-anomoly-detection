@@ -1,7 +1,13 @@
-# Data files
-data/**/*.log
-data/**/*.zip
-
 # environment
 venv/
 
+# Data files
+data/raw/
+data/extracted/
+data/processed/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

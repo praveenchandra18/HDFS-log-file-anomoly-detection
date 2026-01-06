@@ -3,6 +3,7 @@ from pathlib import Path
 from collections import defaultdict
 import pandas as pd
 import json
+import random
 
 label_text_path = Path(config.LABEL_TEXT_PATH)
 root_dir = Path(config.EXTRACTED_DATA_PATH)
@@ -52,10 +53,6 @@ def stream_lines(file_path:Path, max_lines = None):
                 break
 
 def reservoir_sampling(iterable,k,seed=42):
-
-    """Reservoir sampling to draw k items from an iterator"""
-
-    import random
     random.seed(seed)
     sample = []
     for i,item in enumerate(iterable,start=1):
@@ -69,10 +66,7 @@ def reservoir_sampling(iterable,k,seed=42):
     return sample
 
 def main():
-    # From the abnormal.txt file get all the mapping from app to label
     app_to_label = parse_labels(label_text_path)
-    
-    # Now we need csv for all the files that are there
     apps = []
     file_rows = []
     apps_status = defaultdict(lambda:{"num_files": 0, "total_lines": 0, "label": "unknown"})
@@ -107,14 +101,12 @@ def main():
 
     inv_df = pd.DataFrame(file_rows).sort_values(["application","file_name"])
     inv_df.to_csv(processed_dir/"inventory.csv",index=False)
-    # Then we need the app status like how many files, how many lines and its status
     apps_status_df = pd.DataFrame(
         {"application":app,**vals}
         for app,vals in apps_status.items()
     )
     apps_status_df.to_csv(processed_dir/"app_status.csv",index=False)
 
-    # We may also need label counts 
     label_count_apps = apps_status_df["label"].value_counts().rename_axis("label").reset_index(name="num_apps")
     lines_per_label = apps_status_df.groupby("label")["total_lines"].sum().reset_index(name="total_lines")
 
@@ -127,8 +119,6 @@ def main():
     with samples_path.open("w",encoding="utf-8") as jout:
         # a) per_label_samples
         for label in sorted(label_summary["label"].unique()):
-            # we will gather all the labels first  with above line 
-            # then we gather all the files of the label and from those files we take 3 lines from each file
             per_file_sample = []
             for _,row in inv_df[inv_df["label"]==label].iterrows():
                 lines = reservoir_sampling(stream_lines(Path(row["file_path"])),k=3)
@@ -142,7 +132,6 @@ def main():
                     "line": ln
                 })
             
-            # we will now make sampling from the lines variable again which gives samples per label 
             selected = reservoir_sampling((x for x in per_file_sample), k=min(SAMPLES_PER_LABEL, max(1, len(per_file_sample))))
             for item in selected:
                 jout.write(json.dumps(item,ensure_ascii=False)+"\n")
