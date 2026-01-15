@@ -16,14 +16,14 @@ import numpy as np
 
 app = Flask(__name__)
 
-model = keras.models.load_model("model/line_charcnn_lstm_final.keras")
+model = keras.models.load_model("flask_app/model/line_charcnn_lstm_final.keras")
 
-log_data = joblib.load("model/textvectorization_char.pkl")
+log_data = joblib.load("flask_app/model/textvectorization_char.pkl")
 
 vec = keras.layers.TextVectorization.from_config(log_data["config"])
 vec.set_vocabulary(log_data["vocabulary"])
 
-le = joblib.load("model/label_encoder_line.joblib")
+le = joblib.load("flask_app/model/label_encoder_line.joblib")
 
 ID_TO_LABEL = {
     0: "Disk full",
@@ -58,4 +58,4 @@ def predict():
     
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=False)
